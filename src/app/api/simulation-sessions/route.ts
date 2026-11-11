@@ -1,0 +1,6 @@
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { requireUser } from '@/lib/auth/require-user';
+import { readJson, apiError } from '@/lib/api-http';
+const schema=z.object({scenarioId:z.string().uuid(),mode:z.enum(['text','conversation','technical','decision'])});
+export async function POST(request:Request){const auth=await requireUser(['student']);if(auth.error)return auth.error;const p=schema.safeParse(await readJson(request));if(!p.success)return apiError(400,'Choose a valid scenario and interaction mode.');const{data:scenario,error}=await auth.user.supabase.from('simulation_scenarios').select('id,supported_modes').eq('id',p.data.scenarioId).maybeSingle();if(error||!scenario)return apiError(404,'Simulation scenario not found.');if(!scenario.supported_modes.includes(p.data.mode))return apiError(400,'That interaction mode is not supported for this simulation.');const{data,error:saveError}=await auth.user.supabase.from('simulation_sessions').insert({student_id:auth.user.id,scenario_id:scenario.id,interaction_mode:p.data.mode}).select('id,scenario_id,interaction_mode,status,started_at').single();return saveError?apiError(500,'Could not start the simulation session.'):NextResponse.json(data,{status:201});}

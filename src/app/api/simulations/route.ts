@@ -1,0 +1,2 @@
+import{requireUser}from'@/lib/auth/require-user';
+export async function GET(){const auth=await requireUser();if(auth.error)return auth.error;const{data,error}=await auth.user.supabase.from('simulations').select('id,title,category,description,difficulty,estimated_duration,simulation_scenarios(id,scenario_content,assessment_rubric,skills_assessed,learning_objectives,supported_modes)').eq('is_active',true).order('created_at');return error?Response.json({error:'Could not load simulations.'},{status:500}):Response.json(data||[],{headers:{'Cache-Control':'private, no-store'}});}

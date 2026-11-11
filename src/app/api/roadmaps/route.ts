@@ -1,0 +1,3 @@
+import { NextResponse } from 'next/server';
+import { requireUser } from '@/lib/auth/require-user';
+export async function GET() { const auth = await requireUser(); if (auth.error) return auth.error; const { data, error } = await auth.user.supabase.from('roadmaps').select('*, roadmap_stages(*, roadmap_topics(*))').eq('is_active', true).order('roadmap_code').order('stage_order', { referencedTable: 'roadmap_stages' }).order('topic_order', { referencedTable: 'roadmap_stages.roadmap_topics' }); if (error) return Response.json({ error: 'Could not load roadmaps.' }, { status: 500 }); return NextResponse.json(data || []); }

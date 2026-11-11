@@ -1,0 +1,4 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+function safeNext(value: string | null) { return value?.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\') ? value : '/dashboard'; }
+export async function GET(request: NextRequest) { const code = request.nextUrl.searchParams.get('code'); const next = safeNext(request.nextUrl.searchParams.get('next')); if (code) { try { const client = await createSupabaseServerClient(); const { error } = await client.auth.exchangeCodeForSession(code); if (!error) return NextResponse.redirect(new URL(next, request.url)); } catch { /* Redirect to a clear sign-in failure below. */ } } const url = new URL('/login', request.url); url.searchParams.set('error', 'confirmation'); return NextResponse.redirect(url); }
